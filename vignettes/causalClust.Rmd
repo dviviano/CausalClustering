@@ -1,0 +1,340 @@
+---
+title: "Causal Clustering"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Causal Clustering}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 7,
+  fig.height = 5,
+  fig.align = "center"
+)
+```
+
+## Introduction
+
+The package `causalClust` implements methods for designing cluster-randomized experiments under network interference. In this setting, one unit's treatment may affect neighboring units. The choice of experimental clusters therefore affects both statistical precision and spillover bias.
+
+The package is designed for experiments where the user observes an experimental network and wants to choose clusters before randomizing treatment. The central input is an adjacency matrix `W`; the central output is a vector of cluster labels.
+
+The main workflow is:
+
+1. provide an adjacency matrix for the experimental network;
+2. choose a calibration value `xi`, or provide a calibration grid/range;
+3. run `causal_clustering_algorithm()`;
+4. inspect the selected clustering, number of clusters, objective components, and optimization diagnostics;
+5. compare the selected clustering with simpler baselines when useful.
+
+## Reference
+
+This package implements methods from:
+
+Viviano, D., Lei, L., Imbens, G., Karrer, B., Schrijvers, O., & Shi, L. (2026). *Causal clustering: design of cluster experiments under network interference*. Manuscript, May 28, 2026.
+
+## Installation
+
+Install the development version from GitHub with:
+
+```{r, eval = FALSE}
+install.packages("remotes")
+remotes::install_github("ostasovskyi/causalClustering")
+```
+
+Load the package with:
+
+```{r, eval = FALSE}
+library(causalClust)
+```
+
+Some features require optional packages:
+
+```{r, eval = FALSE}
+install.packages(c("igraph", "ggplot2", "Matrix"))
+```
+
+The SDP engine requires `Matrix` and `sdpt3r`. If `sdpt3r` is not available from CRAN in your R setup, install it from GitHub:
+
+```{r, eval = FALSE}
+install.packages("remotes")
+remotes::install_github("AdamRahman/sdpt3r")
+```
+
+## Example
+
+We first illustrate the main estimator on a simulated network. The goal is to choose experimental clusters that trade off variance and spillover bias.
+
+```{r, eval = FALSE}
+library(causalClust)
+
+sim <- simulate_network_data(
+  parameters_graph = list(
+    n = 60,
+    type_graph = "geometric",
+    neighb = 2
+  )
+)
+
+W <- sim$W
+```
+
+The object `W` is the adjacency matrix used by the clustering algorithm. Nonzero entries indicate edges in the experimental network.
+
+We now run the causal clustering algorithm for a single calibration value.
+
+```{r, eval = FALSE}
+fit <- causal_clustering_algorithm(
+  W = W,
+  xi = 1,
+  min_k = 2,
+  max_k = 12,
+  engine = "sdp",
+  methods = available_discretization_methods(),
+  seed = 123
+)
+```
+
+After fitting, we can inspect the selected design.
+
+```{r, eval = FALSE}
+fit$algorithm
+fit$selected_k
+fit$selected_method
+fit$objective
+fit$components
+head(fit$clusters)
+```
+
+The entry `selected_k` is the number of clusters selected by the algorithm. The entry `selected_method` records which discretization method was selected after rounding the relaxation and evaluating the realized objective.
+
+## Objective components
+
+For a candidate clustering, the package evaluates the objective
+
+```text
+xi * variance + bias^2.
+```
+
+The variance component is the normalized sum of squared cluster sizes. The bias component is the average fraction of each unit's neighbors assigned to a different cluster.
+
+The objective can also be evaluated directly for a user-supplied clustering.
+
+```{r, eval = FALSE}
+W_small <- matrix(
+  c(
+    0, 1, 1, 0,
+    1, 0, 0, 1,
+    1, 0, 0, 1,
+    0, 1, 1, 0
+  ),
+  nrow = 4,
+  byrow = TRUE
+)
+
+clusters <- c(1, 1, 2, 2)
+
+components <- clustering_objective_components(W_small, clusters)
+objective <- compute_causal_clustering_objective(
+  W = W_small,
+  xi = 1,
+  clusters = clusters
+)
+
+components
+objective
+all.equal(objective, components$variance + components$bias^2)
+```
+
+## Calibration grids
+
+The calibration parameter `xi` controls the relative weight on the variance component. Larger values of `xi` place more weight on variance; smaller values place more weight on spillover-bias reduction.
+
+If the calibration is uncertain, pass a grid or range. The same public function automatically uses the endpoint-regret algorithm.
+
+```{r, eval = FALSE}
+fit_grid <- causal_clustering_algorithm(
+  W = W,
+  xi_grid = c(0.2, 0.5, 1, 2),
+  min_k = 2,
+  max_k = 12,
+  engine = "sdp",
+  methods = available_discretization_methods(),
+  seed = 123
+)
+
+fit_grid$algorithm
+fit_grid$xi_range
+fit_grid$selected_k
+fit_grid$selected_method
+fit_grid$objective
+fit_grid$rho_values
+fit_grid$components
+```
+
+The package also accepts `calibration`, `calibration_grid`, and `calibration_range`. These are converted internally by
+
+```text
+xi = 1 / calibration.
+```
+
+## Discretization methods
+
+The relaxation output must be rounded into a feasible clustering. The supported rounding methods are:
+
+```{r, eval = FALSE}
+available_discretization_methods()
+```
+
+They are currently:
+
+```{r, eval = FALSE}
+c(
+  "kmeans",
+  "hierarchical",
+  "spectral_norm_kmeans",
+  "spectral_unnorm_kmeans",
+  "spectral_norm_hierarchical",
+  "spectral_unnorm_hierarchical"
+)
+```
+
+When several methods are supplied, the package tries all requested methods and keeps the candidate with the smallest realized objective.
+
+## SDP diagnostics
+
+With `engine = "sdp"`, fitted objects may contain an SDP lower bound and an approximation certificate.
+
+```{r, eval = FALSE}
+fit$Gamma_n
+fit$certificate_valid
+fit$sdp_lower_bound
+```
+
+The argument `k_constraint` controls how the SDP relaxation is solved.
+
+```{r, eval = FALSE}
+fit_k <- causal_clustering_algorithm(
+  W = W,
+  xi = 1,
+  min_k = 2,
+  max_k = 12,
+  engine = "sdp",
+  k_constraint = TRUE,
+  gamma_bar = 10,
+  box_constraints = TRUE,
+  methods = available_discretization_methods(),
+  seed = 123
+)
+```
+
+With `k_constraint = FALSE`, the algorithm solves one relaxation and rounds it over the candidate K grid. With `k_constraint = TRUE`, it solves a K-specific SDP relaxation for each candidate K and can impose additional cluster-size and box constraints.
+
+## Spectral approximation
+
+The package can be used without an SDP solver by setting `engine = "spectral"`. This is useful for exploratory computation. The spectral engine is available for scalar calibration values.
+
+```{r, eval = FALSE}
+fit_spectral <- causal_clustering_algorithm(
+  W = W,
+  xi = 1,
+  min_k = 2,
+  max_k = 12,
+  engine = "spectral",
+  methods = available_discretization_methods(),
+  seed = 123
+)
+
+fit_spectral$selected_k
+fit_spectral$selected_method
+fit_spectral$objective
+fit_spectral$components
+```
+
+The spectral engine evaluates the same realized objective after rounding, but it does not provide the SDP lower bound or approximation certificate.
+
+## Baseline clustering methods
+
+The package also includes baseline clustering procedures.
+
+```{r, eval = FALSE}
+epsilon_fit <- cluster_epsilon_net(W)
+spectral_fit <- cluster_spectral(W, num_clusters = 5, seed = 123)
+```
+
+If `igraph` is installed, Louvain clustering is also available.
+
+```{r, eval = FALSE}
+louvain_fit <- cluster_louvain_membership(W)
+```
+
+These baselines can be evaluated using the same objective functions.
+
+```{r, eval = FALSE}
+compute_causal_clustering_objective(W, xi = 1, clusters = epsilon_fit$clusters)
+compute_causal_clustering_objective(W, xi = 1, clusters = spectral_fit)
+compute_causal_clustering_objective(W, xi = 1, clusters = louvain_fit)
+```
+
+## Simulation comparison
+
+The function `run_single_network()` simulates or accepts a network, runs the causal clustering method over a sequence of `xi` values, and compares it with baseline clusterings.
+
+```{r, eval = FALSE}
+out <- run_single_network(
+  seed = 123,
+  parameters_graph = list(
+    type_graph = "geometric",
+    n = 100,
+    neighb = 2
+  ),
+  xi_seq = seq(0.1, 5, by = 0.5),
+  min_k = 2,
+  max_k = 20,
+  include_louvain = TRUE,
+  engine = "spectral",
+  objective_type = "squared",
+  methods = available_discretization_methods()
+)
+
+head(out$results)
+```
+
+The plotting functions summarize the objective path and the selected number of clusters.
+
+```{r, eval = FALSE}
+plots <- plot_objective_path(out$results)
+plots$plot_objective
+plots$plot_num_clusters
+```
+
+## Additional parameters
+
+The most commonly changed parameters are:
+
+```{r, eval = FALSE}
+causal_clustering_algorithm(
+  W = W,
+  xi = 1,
+  min_k = 2,
+  max_k = 12,
+  n_eig = NULL,
+  engine = "sdp",
+  methods = available_discretization_methods(),
+  include_bernoulli = FALSE,
+  objective_type = "squared",
+  k_constraint = FALSE,
+  gamma_bar = 10,
+  box_constraints = TRUE,
+  try_sign_flip = TRUE,
+  keep_search_matrices = FALSE,
+  keep_sdp_solutions = FALSE,
+  seed = 123
+)
+```
+
+For most users, the main choices are the adjacency matrix `W`, the calibration input, the K search range, and the optimization engine.

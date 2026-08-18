@@ -1,0 +1,31 @@
+Package: causalClust
+Title: Causal Clustering Tools for Network Experiments
+Version: 0.1.0
+Authors@R: c(
+    person("Davide", "Viviano", role = "aut"),
+    person("Lihua", "Lei", role = "aut"),
+    person("Guido", "Imbens", role = "aut"),
+    person("Brian", "Karrer", role = "aut"),
+    person("Okke", "Schrijvers", role = "aut"),
+    person("Liang", "Shi", role = "aut"),
+    person("Oleksandr", "Stasovskyi", email = "ostasovskyi@college.harvard.edu", role = c("cre", "ctb"))
+    )
+Description: Implements causal clustering tools for network experiments,
+    including simulation routines, baseline clustering methods, a
+    spectral-relaxation approach to causal clustering, evaluation helpers, and
+    plotting utilities.
+License: file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Imports:
+    igraph
+Suggests:
+    ggplot2,
+    Matrix,
+    sdpt3r,
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
