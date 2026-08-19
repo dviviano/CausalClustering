@@ -1,4 +1,4 @@
-#' causalClust: causal clustering for network experiments
+#' CausalClustering: causal clustering for network experiments
 #'
 #' Tools for constructing and evaluating cluster randomized designs under
 #' network interference. The main design function is

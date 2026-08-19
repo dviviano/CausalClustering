@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-The package `causalClust` implements methods for designing cluster-randomized experiments under network interference. In this setting, one unit's treatment may affect neighboring units. The choice of experimental clusters therefore affects both statistical precision and spillover bias.
+The package `CausalClustering` implements methods for designing cluster-randomized experiments under network interference. In this setting, one unit's treatment may affect neighboring units. The choice of experimental clusters therefore affects both statistical precision and spillover bias.
 
 The package is designed for experiments where the user observes an experimental network and wants to choose clusters before randomizing treatment. The central input is an adjacency matrix `W`; the central output is a vector of cluster labels.
 
@@ -43,13 +43,13 @@ Install the development version from GitHub with:
 
 ```{r, eval = FALSE}
 install.packages("remotes")
-remotes::install_github("ostasovskyi/causalClustering")
+remotes::install_github("dviviano/CausalClustering")
 ```
 
 Load the package with:
 
 ```{r, eval = FALSE}
-library(causalClust)
+library(CausalClustering)
 ```
 
 Some features require optional packages:
@@ -70,7 +70,7 @@ remotes::install_github("AdamRahman/sdpt3r")
 We first illustrate the main estimator on a simulated network. The goal is to choose experimental clusters that trade off variance and spillover bias.
 
 ```{r, eval = FALSE}
-library(causalClust)
+library(CausalClustering)
 
 sim <- simulate_network_data(
   parameters_graph = list(
@@ -311,30 +311,3 @@ plots <- plot_objective_path(out$results)
 plots$plot_objective
 plots$plot_num_clusters
 ```
-
-## Additional parameters
-
-The most commonly changed parameters are:
-
-```{r, eval = FALSE}
-causal_clustering_algorithm(
-  W = W,
-  xi = 1,
-  min_k = 2,
-  max_k = 12,
-  n_eig = NULL,
-  engine = "sdp",
-  methods = available_discretization_methods(),
-  include_bernoulli = FALSE,
-  objective_type = "squared",
-  k_constraint = FALSE,
-  gamma_bar = 10,
-  box_constraints = TRUE,
-  try_sign_flip = TRUE,
-  keep_search_matrices = FALSE,
-  keep_sdp_solutions = FALSE,
-  seed = 123
-)
-```
-
-For most users, the main choices are the adjacency matrix `W`, the calibration input, the K search range, and the optimization engine.

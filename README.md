@@ -1,6 +1,6 @@
-# causalClust
+# CausalClustering
 
-`causalClust` provides tools for designing and evaluating cluster-randomized experiments under network interference. The package implements causal clustering procedures for choosing experimental clusters when units interact through a network and the target estimand is a global treatment effect.
+`CausalClustering` provides tools for designing and evaluating cluster-randomized experiments under network interference. The package implements causal clustering procedures for choosing experimental clusters when units interact through a network and the target estimand is a global treatment effect.
 
 The package is organized around a single main workflow:
 
@@ -22,13 +22,13 @@ Install the development version from GitHub with:
 
 ```r
 install.packages("remotes")
-remotes::install_github("ostasovskyi/causalClustering")
+remotes::install_github("dviviano/CausalClustering")
 ```
 
 Load the package with:
 
 ```r
-library(causalClust)
+library(CausalClustering)
 ```
 
 Most basic utilities use base R and `stats`. Some optional functionality requires additional packages:
@@ -53,7 +53,7 @@ On Windows, installing `sdpt3r` from source may require Rtools.
 The following example simulates a small network and runs the main clustering algorithm for a single calibration value.
 
 ```r
-library(causalClust)
+library(CausalClustering)
 
 sim <- simulate_network_data(
   parameters_graph = list(

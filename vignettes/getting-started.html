@@ -343,11 +343,11 @@ code > span.er { color: #a61717; background-color: #e3d2d2; }
 
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>The package <code>causalClust</code> implements methods for designing
-cluster-randomized experiments under network interference. In this
-setting, one unit’s treatment may affect neighboring units. The choice
-of experimental clusters therefore affects both statistical precision
-and spillover bias.</p>
+<p>The package <code>CausalClustering</code> implements methods for
+designing cluster-randomized experiments under network interference. In
+this setting, one unit’s treatment may affect neighboring units. The
+choice of experimental clusters therefore affects both statistical
+precision and spillover bias.</p>
 <p>The package is designed for experiments where the user observes an
 experimental network and wants to choose clusters before randomizing
 treatment. The central input is an adjacency matrix <code>W</code>; the
@@ -375,9 +375,9 @@ under network interference</em>. Manuscript, May 28, 2026.</p>
 <h2>Installation</h2>
 <p>Install the development version from GitHub with:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;remotes&quot;</span>)</span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;ostasovskyi/causalClustering&quot;</span>)</span></code></pre></div>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>remotes<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;dviviano/CausalClustering&quot;</span>)</span></code></pre></div>
 <p>Load the package with:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(causalClust)</span></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(CausalClustering)</span></code></pre></div>
 <p>Some features require optional packages:</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="fu">c</span>(<span class="st">&quot;igraph&quot;</span>, <span class="st">&quot;ggplot2&quot;</span>, <span class="st">&quot;Matrix&quot;</span>))</span></code></pre></div>
 <p>The SDP engine requires <code>Matrix</code> and <code>sdpt3r</code>.
@@ -391,7 +391,7 @@ install it from GitHub:</p>
 <p>We first illustrate the main estimator on a simulated network. The
 goal is to choose experimental clusters that trade off variance and
 spillover bias.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(causalClust)</span>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="fu">library</span>(CausalClustering)</span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>sim <span class="ot">&lt;-</span> <span class="fu">simulate_network_data</span>(</span>
 <span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">parameters_graph =</span> <span class="fu">list</span>(</span>
@@ -601,31 +601,6 @@ number of clusters.</p>
 <div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a>plots <span class="ot">&lt;-</span> <span class="fu">plot_objective_path</span>(out<span class="sc">$</span>results)</span>
 <span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>plots<span class="sc">$</span>plot_objective</span>
 <span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>plots<span class="sc">$</span>plot_num_clusters</span></code></pre></div>
-</div>
-<div id="additional-parameters" class="section level2">
-<h2>Additional parameters</h2>
-<p>The most commonly changed parameters are:</p>
-<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">causal_clustering_algorithm</span>(</span>
-<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>  <span class="at">W =</span> W,</span>
-<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>  <span class="at">xi =</span> <span class="dv">1</span>,</span>
-<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>  <span class="at">min_k =</span> <span class="dv">2</span>,</span>
-<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>  <span class="at">max_k =</span> <span class="dv">12</span>,</span>
-<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>  <span class="at">n_eig =</span> <span class="cn">NULL</span>,</span>
-<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>  <span class="at">engine =</span> <span class="st">&quot;sdp&quot;</span>,</span>
-<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>  <span class="at">methods =</span> <span class="fu">available_discretization_methods</span>(),</span>
-<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a>  <span class="at">include_bernoulli =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a>  <span class="at">objective_type =</span> <span class="st">&quot;squared&quot;</span>,</span>
-<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a>  <span class="at">k_constraint =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a>  <span class="at">gamma_bar =</span> <span class="dv">10</span>,</span>
-<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a>  <span class="at">box_constraints =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a>  <span class="at">try_sign_flip =</span> <span class="cn">TRUE</span>,</span>
-<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a>  <span class="at">keep_search_matrices =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a>  <span class="at">keep_sdp_solutions =</span> <span class="cn">FALSE</span>,</span>
-<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a>  <span class="at">seed =</span> <span class="dv">123</span></span>
-<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a>)</span></code></pre></div>
-<p>For most users, the main choices are the adjacency matrix
-<code>W</code>, the calibration input, the K search range, and the
-optimization engine.</p>
 </div>
 
 
